@@ -1,0 +1,13 @@
+load("@rules_foreign_cc//foreign_cc:defs.bzl", "cmake")
+
+filegroup(
+    name = "all",
+    srcs = glob(["**"]),
+    visibility = ["//visibility:public"],
+)
+
+cc_library(
+    name = "wide_integer",
+    visibility = ["//visibility:public"],
+    hdrs =["math/wide_integer/uintwide_t.h"],
+)

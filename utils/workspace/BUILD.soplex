@@ -1,0 +1,14 @@
+cc_import(
+    name = "soplex",
+    static_library = "lib/libsoplex.a",
+    visibility = ["//visibility:public"],
+    deps=["gmp"],
+)
+cc_import(
+    name = "gmp",
+    static_library = "lib/libgmp.a",
+    visibility = ["//visibility:public"],
+)
+#  "-lgmp",
+            #  "-lreadline",
+          #  "-ltbb",

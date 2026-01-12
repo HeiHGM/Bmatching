@@ -1,0 +1,21 @@
+cc_library(
+    name = "easyloggingpp",
+    srcs = ["src/easylogging++.cc"],
+    hdrs = ["src/easylogging++.h"],
+    defines = select({
+        ":logging": ["ELPP_FEATURE_PERFORMANCE_TRACKING","ELPP_NO_LOG_TO_FILE",],
+        "//conditions:default": [
+            "ELPP_FEATURE_PERFORMANCE_TRACKING",
+            "ELPP_DISABLE_LOGS",
+            "ELPP_DISABLE_PERFORMANCE_TRACKING",
+            "ELPP_NO_LOG_TO_FILE",
+        ],
+    }),
+    includes = ["src"],
+    visibility = ["//visibility:public"],
+)
+
+config_setting(
+    name = "logging",
+    values = {"define": "logging=enabled"},
+)
