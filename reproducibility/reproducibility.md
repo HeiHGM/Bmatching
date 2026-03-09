@@ -50,6 +50,8 @@ The runner executes all configured algorithm pipelines across the hypergraph ins
 
 ## 5. Plot Results
 
+The C++ plotting tool is the maintained version. Run it via Bazel:
+
 ```sh
-python3 tools/plot/plot.py <path_to_experiment> <path_to_experiment>/visualisation.textproto
+bazel run -c opt tools/plot:plot_cc <path_to_experiment> <path_to_experiment>/visualisation.textproto
 ```
