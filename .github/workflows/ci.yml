@@ -1,0 +1,51 @@
+name: CI
+
+on:
+  push:
+    branches: [main, cmake-switch]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        build_type: [Release, Debug]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y cmake g++ libncurses-dev
+
+      - name: Configure
+        run: cmake -B build -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DBUILD_TESTING=OFF
+
+      - name: Build
+        run: cmake --build build -j$(nproc) --target bmatching_cli
+
+      - name: Smoke test
+        run: |
+          ./build/app/bmatching_cli --graph examples/small.hgr --algorithms greedy --capacity 1 --quiet
+          ./build/app/bmatching_cli --graph examples/weighted.hgr --algorithms reductions,greedy,unfold --capacity 2 --quiet
+
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y cmake g++ libncurses-dev
+
+      - name: Configure with tests
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=ON
+
+      - name: Build
+        run: cmake --build build -j$(nproc) --target bmatching_cli app
+
+      - name: Smoke test
+        run: |
+          ./build/app/bmatching_cli --graph examples/small.hgr --algorithms greedy --capacity 1 --quiet
+          ./build/app/bmatching_cli --graph examples/weighted.hgr --algorithms reductions,greedy,unfold --capacity 2 --quiet

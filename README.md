@@ -1,272 +1,344 @@
 # HeiHGM::BMatching
 
-HeiHGM::BMatching is a program to solve bmatching in hypergraphs using reductions, integer linear programs and local search techniques.
-It is the software for the paper:
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![CI](https://github.com/HeiHGM/Bmatching/actions/workflows/ci.yml/badge.svg)](https://github.com/HeiHGM/Bmatching/actions/workflows/ci.yml)
+[![C++17](https://img.shields.io/badge/C%2B%2B-17-orange.svg)](https://en.cppreference.com/w/cpp/17)
+[![CMake](https://img.shields.io/badge/CMake-%3E%3D%203.20-blue.svg)](https://cmake.org/)
+[![DOI](https://img.shields.io/badge/DOI-10.7155%2Fjgaa.v30i1.3166-green.svg)](https://doi.org/10.7155/jgaa.v30i1.3166)
 
-**Engineering Hypergraph $b$-Matching Algorithms**
+**Tame your hypergraphs -- fast, flexible b-matching at any scale.**
 
-by Ernestine Großmann, Felix Joos, Henrik Reinstädtler and Christian Schulz
+A high-performance solver for b-matching problems in hypergraphs, combining graph reductions, integer linear programming, and local search into a flexible algorithm pipeline.
 
+Experiment data is available on [Zenodo](https://doi.org/10.5281/zenodo.18225669). For reproducing paper results, see [reproducibility/reproducibility.md](reproducibility/reproducibility.md).
 
-The latest software can be found at https://github.com/HeiHGM/Bmatching 
+---
 
-## Available Algorithms
+## Quick Start
+
+```sh
+# Clone & build
+git clone https://github.com/HeiHGM/Bmatching.git
+cd Bmatching
+./compile.sh
+
+# Try it right away on bundled examples
+./build/app/bmatching_cli --graph examples/small.hgr --algorithms greedy --capacity 1
+
+# Weighted hypergraph with reductions
+./build/app/bmatching_cli --graph examples/weighted.hgr --algorithms reductions,greedy,unfold --capacity 2
+
+# Compact output (weight, size, time only)
+./build/app/bmatching_cli --graph examples/weighted.hgr --algorithms reductions,greedy,unfold --quiet
+```
+
+---
+
+## Install via Homebrew
+
+```sh
+brew install --HEAD HeiHGM/bmatching/bmatching
+bmatching --graph examples/weighted.hgr --algorithms greedy --capacity 2 --quiet
+```
+
+---
+
+## Building from Source
+
+**Prerequisites:** CMake >= 3.20, a C++17 compiler, and ncurses dev headers.
+
+```sh
+./compile.sh            # Release build (default)
+./compile.sh Debug      # Debug build
+```
+
+Or manually:
+
+```sh
+cmake -B build -DCMAKE_BUILD_TYPE=Release
+cmake --build build -j$(nproc)
+```
+
+All external dependencies (Abseil, Protobuf, GoogleTest, Easylogging++, wide-integer) are fetched automatically via CMake's FetchContent.
+
+### Options
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `BMATCHING_USE_GUROBI` | OFF | Enable Gurobi ILP solver (requires local install, set `GUROBI_HOME`) |
+| `BMATCHING_USE_SCIP` | OFF | Enable SCIP solver |
+| `BMATCHING_USE_BSUITOR` | OFF | Enable bSuitor algorithm (fetched via git) |
+| `BMATCHING_USE_KARP_SIPSER` | OFF | Enable Karp-Sipser algorithm (fetched via git) |
+| `BMATCHING_USE_HASHING` | OFF | Enable edge hashing for Weighted Domination reduction |
+| `BMATCHING_USE_TCMALLOC` | OFF | Use tcmalloc from gperftools |
+| `BMATCHING_ENABLE_LOGGING` | OFF | Enable easylogging++ log output |
+| `BMATCHING_FREE_MEMORY_CHECK` | OFF | Enable free memory checking in runner |
+| `BUILD_TESTING` | ON | Build unit tests |
+
+Example with Gurobi and bSuitor enabled:
+
+```sh
+cmake -B build \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DBMATCHING_USE_GUROBI=ON \
+  -DBMATCHING_USE_BSUITOR=ON
+cmake --build build -j$(nproc)
+```
+
+### Built Binary
+
+After building, the CLI is available at:
+
+```
+build/app/bmatching_cli
+```
+
+---
+
+## Command-Line Interface
+
+```sh
+bmatching_cli --graph <file> --algorithms <algo1,algo2,...> [options]
+```
+
+### Required Flags
+
+| Flag | Description |
+|------|-------------|
+| `--graph <path>` | Path to the hypergraph file |
+| `--algorithms <list>` | Comma-separated algorithm pipeline (e.g. `reductions,greedy,unfold`) |
+
+### Common Flags
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--capacity <int>` | 1 | Node capacity (`-1` = use node weights from file) |
+| `--format <str>` | `hgr` | Input format: `hgr` or `graph` |
+| `--ordering_method <str>` | `bmindegree_dynamic` | Greedy ordering method (see below) |
+| `--timeout <float>` | 60.0 | Solver timeout in seconds (ilp_exact, presolved_ilp, scip, local_improvement) |
+| `--max_tries <int>` | 1000 | Max iterations for ILS / local search |
+| `--iters <int>` | 10 | Local improvement iterations |
+| `--distance <int>` | 5 | Edges per local improvement neighborhood |
+| `--backend <str>` | `gurobi` | Solver backend for local_improvement: `gurobi` or `scip` |
+| `--disable_hint` | false | Don't mark reductions solution as exact |
+| `--max_runs <int>` | 10 | Maximum reduction rounds |
+| `--reps <int>` | 1 | Number of reduction repetitions |
+| `--inplace` | false | Use newer ILS interface internally |
+
+### Output Flags
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--quiet` | false | Only print weight, size, exactness, and time |
+| `--output <path>` | stdout | Write result to file |
+| `--output_format <str>` | `text` | Output format: `text`, `json`, or `binary` |
+
+---
+
+## Algorithms
+
+Algorithms are chained via `--algorithms` as a comma-separated pipeline. Each algorithm in the pipeline runs in sequence on the same hypergraph and matching state.
 
 ### `greedy`
 
-Greedly adding edges to a b matching. `ordering_method` can have the following values:
+Greedily adds edges to a b-matching using a chosen ordering strategy.
 
-- `default_order` Iterates over all edges in order of their index once and adds all possible edges that are possible. Prior versions used the order in the bmatching data structure, that is dependening on prior operations due to the nature of the bmatching structure.
-- `bmaximize` Maximizes the matching using the three compartement data structure. Greedly addes the first free edge in the data structure to the matching.
-- `bweight` Sorts the edges by their weight and tries to add them in descending order.
-- `bratio_static` Scales the edge weight by the capacities of the vertices of an edge, sorts them and add them in descending order.
-- `bmult_static` Scales the edge by the minimal capacity of the vertices of an edge, sorts them and add them in descending order.
-- `bratio_dynamic` Scales the edge weight by the residual capacity at each vertex of an edge. Recalculates after each addition to the matching.
-- `bmindegree_dynamic` Scales the edge weight by the residual capacity and divide by the degree of a vertex in the edge. Recalculates the residual capacity after each addition.
-- `bmindegree1_dynamic` Uses the product of 1/degree of vertex as ordering method.
+Available `--ordering_method` values:
 
-### `ilp_exact`
+| Ordering Method | Description |
+|-----------------|-------------|
+| `default_order` | Iterates over edges in index order, adds all possible edges |
+| `bmaximize` | Uses a three-compartment data structure, greedily adds the first free edge |
+| `bweight` | Sorts edges by weight, adds in descending order |
+| `bratio_static` | Scales edge weight by vertex capacities, sorts descending |
+| `bmult_static` | Scales edge by minimal vertex capacity, sorts descending |
+| `bratio_dynamic` | Scales by residual capacity, recalculates after each addition |
+| `bmindegree_dynamic` | Scales by residual capacity / vertex degree, recalculates dynamically |
+| `bmindegree1_dynamic` | Uses product of 1/degree as ordering |
 
-Exactly solves a bmatching using gurobi with a `timeout` of seconds.  You need to build with `--define gurobi=enabled` to use this.
+```sh
+# Greedy with weight-based ordering
+bmatching_cli --graph input.hgr --algorithms greedy --ordering_method bweight --capacity 3
 
-`timeout` needs to be specified in `double_params`.
-
-### `ils`
-
-Using an a priori solution the iterated local search searches for edge pairs that can be swapped into the solution. Afterwards it perturbs the solution to escape local optima and starts searching again.
-You have to specify a `timeout`in `double_params`.
-
-### `local_improvement`
-
-Locally improve solution quality by ILP via Gurobi. You need to specify `iters` and `distance` (`int64_params`) and a `timeout` (`double_params`). Distance is the number of edges that will be taken from the graph to be improved. `iters` controls how many iterations of local improvement will be done. `timeout` specifies a timeout on the iterations.
-
-### `presolved_ilp`
-
-Solves the remainder of a graph (e.g. after applying reductions) exactly using ILP via Gurobi. You have to specify a `timeout` (`double_params`). You need to build with `--define gurobi=enabled` to use this.
+# Greedy with dynamic scaling (default ordering)
+bmatching_cli --graph input.hgr --algorithms greedy --capacity 5
+```
 
 ### `reductions` & `unfold`
 
-Reduces the graph with our reductions for b matching problem. At the end you should call `unfold` to obtain the unfolded solution. 
+Reduces the graph size using b-matching reductions. Always pair with `unfold` afterwards to recover the full solution.
 
-Optional setting (disable_hint: "true") to not set the hint to following steps that the solution is exact.
+```sh
+# Reductions + greedy on the remainder
+bmatching_cli --graph input.hgr --algorithms reductions,greedy,unfold --capacity 5
 
-Optional setting (assume_sorted: "true") to use implementations that assume the edges/nodes to be sorted, so that certain operations get a better complexity. 
+# With extra reduction rounds
+bmatching_cli --graph input.hgr --algorithms reductions,greedy,unfold \
+  --max_runs 20 --reps 3 --capacity 1
+```
+
+### `ils`
+
+Iterated local search: improves an existing solution by searching for beneficial edge swaps, then perturbs to escape local optima. Requires an a priori solution (run greedy first).
+
+```sh
+# Greedy + ILS refinement
+bmatching_cli --graph input.hgr --algorithms greedy,ils --max_tries 5000 --capacity 1
+
+# Full pipeline: reductions + greedy + ILS + unfold
+bmatching_cli --graph input.hgr --algorithms reductions,greedy,ils,unfold \
+  --max_tries 10000 --capacity 3
+
+# ILS in-place mode
+bmatching_cli --graph input.hgr --algorithms greedy,ils \
+  --max_tries 5000 --inplace --capacity 1
+```
+
+### `ilp_exact`
+
+Exactly solves the b-matching using Gurobi ILP. Requires `BMATCHING_USE_GUROBI=ON`.
+
+```sh
+# Exact solve with 5-minute timeout
+bmatching_cli --graph input.hgr --algorithms ilp_exact --timeout 300 --capacity 1
+
+# Reductions first, then exact solve on the remainder
+bmatching_cli --graph input.hgr --algorithms reductions,ilp_exact,unfold \
+  --timeout 300 --capacity 1
+```
+
+### `presolved_ilp`
+
+Solves the reduced (presolved) graph exactly using Gurobi ILP. Designed to run after `reductions`. Requires `BMATCHING_USE_GUROBI=ON`.
+
+```sh
+bmatching_cli --graph input.hgr --algorithms reductions,presolved_ilp,unfold \
+  --timeout 300 --capacity 1
+```
 
 ### `scip`
 
-Solves the remainder of a graph (e.g. after applying reductions) exactly using ILP via SCIP. You have to specify a `timeout` (`double_params`).
-
-## External Algorithms
-
-In order to compare results more accurately and have a unified workflow for storing results, we are automatically  building and linking `bSuitor` by Khan et al. and `kss`/ `ksmd` by Dufosse et al. into our `runner` target. The integration can be found in app/algorithms/<name of the competitor>
-
-You can enable building with bazel them with `bsuitor=enabled` and `karp_sipser=enabled`.
-### bSuitor
-
-**`name`**: `bsuitor`
-
-**Authors:** Khan et al.
-
-
-### Karp-Sipser scaling
-
-Can only run on capacity 1.
-
-**`name`** `kss`or `ksmd`
-
-**Authors:** Dufosse et al.
-
-
-**External options:** `kss`: KSS iterations in `scaling_iterations` int64_params.
-
-
-## Adding an algorithm
-
-
-
-1. Implement your (templated) algorithms in a `bmatching` subfolder.
-2. Write an `AlgorithmImpl` in `app/algorithms`. You must implement two functions. One to execute and one to validate a config. You can read `double_params`,`int64_params` and `string_params`. Please refer to the [app/app_io.proto](app/app_io.proto#L39).
-3. Give your implementation a unique AlgorithmName.
-4. Register your implementation via the `REGISTER_IMPL` macro.
-5. You can now write `run_configs` using your algorithm.
-
-
-
-## Compiling
-
-HeiHGM::BMatching uses [bazel](https://bazel.build) as build system. After installing bazel, feel free to follow the tutorial below. Please use clang as your compiler suite (as MPI flags are configured for this compiler suite).
-
-We extensivly use (text)proto as format for storing configs and results. The proto definition can be found in `app/app_io.proto`.
-
-### Gurobi macOS support
-
-To use on a mac please uncomment `--cxxopt=-stdlib=libc++` in [`.bazelrc`](.bazelrc) if you manually compiled Gurobi with a different stdlib.
-
-### Configurable settings
-
-You can enable gurobi with `gurobi=enabled`.
-
-You can enable edge hashing used in Weighted Domination reduction with defining `hashing=enabled` while building `//app` or `//runner` targets, e.g.:
+Solves the reduced graph exactly using the SCIP solver. Requires `BMATCHING_USE_SCIP=ON`.
 
 ```sh
-bazel build -c opt --define hashing=enabled //runner
+bmatching_cli --graph input.hgr --algorithms reductions,scip,unfold \
+  --timeout 120 --capacity 3
 ```
-Furthermore, you can use a different malloc implementation and use it for profiling:
-```sh
-bazel build -c opt --define tcmalloc=gperftools //runner
-```
-Profiling then can be enabled by defining the `CPUPROFILE` env variable.
 
-Note on mac you have to comment `--cxxopt=-frecord-gcc-switches` out in .bazelrc
-### openmp on mac
+### `local_improvement`
 
-Please install `open-mpi` and `llvm` via brew. MPI is used by external software to be used for comparison.
-Prepend commands by `BAZEL_USE_CPP_ONLY_TOOLCHAIN=1 CC=/opt/homebrew/opt/llvm/bin/clang` in order to use the different (non-apple) llvm.
-
-## Running one-off computations (`app`)
-
-Build the `//app` target and supply a simple config via the `command_textproto` option:
+Iteratively improves solution quality by solving small ILP subproblems around selected edges. Requires an a priori solution and either Gurobi or SCIP.
 
 ```sh
-bazel build -c opt //app
-./bazel-bin/app/app --command_textproto 'command:"run" hypergraph {    file_path: "<path to hypergraph file>"    format: "hgr" } config {   algorithm_configs{algorithm_name:"reductions" string_params{key:"disable_hint" value:"false"} string_params{key:"assume_sorted" value:"true"}}    algorithm_configs{algorithm_name:"unfold" string_params{key:"assume_sorted" value:"true"}}    capacity: 1   short_name: "only_reductions" }'
-```
-## Running an experiment
+# Local improvement with Gurobi backend
+bmatching_cli --graph input.hgr --algorithms reductions,greedy,local_improvement,unfold \
+  --backend gurobi --iters 20 --distance 10 --timeout 60 --max_tries 1000 --capacity 1
 
-### Getting experiment data
-
-To get a collection of hypergraphs visit [Zenodo](https://doi.org/10.5281/zenodo.18225669). The storage of hypergraphs is organized as follows:
-
-```
-├── graphs
-│   └── walshaw
-│       ├── collection.textproto
-|       ├── ...
-│       ├── graph1.graph
-│       ├── graph1.graph.hgr
-│       ├── graph1.graph.weighted.hgr
-│       └── graph1.graph.weighted.hgr.mtx
-├── README.md
-└── storage.textproto
+# Local improvement with SCIP backend
+bmatching_cli --graph input.hgr --algorithms reductions,greedy,local_improvement,unfold \
+  --backend scip --iters 10 --distance 5 --timeout 30 --max_tries 500 --capacity 3
 ```
 
-- `storage.textproto`: file containing info about the repository, can be empty.
-- `collection.textproto`: per directory/collection contains the list of hypergraphs and information about the files. Definition in [app_io.proto](app/app_io.proto#L117).
+### External Algorithms
 
-Example:
+For comparison, the runner can link external solvers. Enable at build time:
 
-```
-hypergraphs {
-  name: "wing_nodal.graph"
-  edge_weight_type: "random(100)"
-  collection: "dimacs10(graph)"
-  file_path: "wing_nodal.graph.weighted.hgr"
-  node_count: 10937
-  edge_count: 75488
-  format: "hgr"
-  node_weight_type: "random(degree)"
-  sort: "walshaw"
-}
-hypergraphs {
-  name: "wing_nodal.graph"
-  edge_weight_type: "random(100)"
-  collection: "dimacs10(graph)"
-  file_path: "wing_nodal.graph.weighted.hgr.mtx"
-  node_count: 10937
-  edge_count: 75488
-  format: "mtx"
-  node_weight_type: "random(degree)"
-  sort: "walshaw"
-}
-collection_name: "dimacs10(graph)"
-version: "1.0"
-```
-- `*.hgr` graphs in hMetis format.
-- `*.mtx` graphs in mtx format (symmetric) for third_party solver, mainly used for graphs.
+| Algorithm | Build Flag | Authors | Capacity |
+|-----------|------------|---------|----------|
+| **bSuitor** | `BMATCHING_USE_BSUITOR=ON` | Khan et al. | any |
+| **kss** / **ksmd** | `BMATCHING_USE_KARP_SIPSER=ON` | Dufosse et al. | 1 only |
 
-### Setting up an experiment
+---
 
-To generate the an experiment use the `//runner:generate_experiment_config` target to generate an example.
+## Output Examples
 
-Generate an experiment with default order via `bmindegree_dynamic` and default capacity `5` with `16` concurrent cores.
-```sh
-bazel build -c opt //runner:generate_experiment_config # compile the target
-mkdir <experiment_directory> # important generate the experiment_directory
-./bazel-bin/runner/generate_experiment_config --data_path path/to/hypergraph-data --experiment_name "<name of experiment>" --experiment_path="<experiment_directory>" --hypergraph_filter='format:"hgr" edge_weight_types:"random(100)" sort:"walshaw"' --run_configs='run_configs { algorithm_configs { algorithm_name: "greedy" string_params {key: "ordering_method" value: "bmindegree_dynamic"}} capacity: 5 short_name: "bmindegree_dynamic5"}' --concurrent_processes 16
-```
-
-
-This generates an `experiment.textproto` in the folder `<experiment_directory>`. You can modify this file with any text editor and edit the `run_configs`.
-
-### Running an experiment
-
-Build the runner in opt settings:
+### Default (text)
 
 ```sh
-bazel build -c opt //runner
+bmatching_cli --graph input.hgr --algorithms greedy --capacity 2
 ```
 
-and run 
+Prints the full result as text to stdout.
+
+### Quiet mode
 
 ```sh
-./bazel-bin/runner/runner --experiment_path <experiment_directory>
+bmatching_cli --graph input.hgr --algorithms reductions,greedy,unfold --quiet
 ```
 
-This will execute the tasks in `concurrent_processes` parallel processes as configured in `experiment.textproto` generated in the previous step.
-
-### Analysing the results
-
-The results are stored in `results-*-<concurrent_processes>.binary_proto` in binaryproto to save some storage.
-Plotting is done via the `tools/plot` tool using the visualisation proto. The following proto generates 4 plots (each for a different capacity) for 
-the experiment in subpath `"mm-eweight-random100_greedy"` with type `performance_profile`.
-
 ```
-visualisations {
-    capacity: 1
-    capacity: -1
-    capacity: 3
-    capacity: 5
-    experiment_paths: "mm-eweight-random100_greedy"
-    type:"performance_profile"
-    title: "Performance Profile on $num planted hypergraphs\n (e-weight random(100),capacity $capacity)"
-    folder_name:"mm-eweight-random100_greedy"
-    file_prefix: "performance_plot_"
-}
+weight: 42
+size: 15
+exact: false
+time_ms: 1.234
 ```
 
-To show this example use the `tools/plot/plot.py` by running:
+### JSON to file
 
 ```sh
-bazel run tools/plot -- <path to experiment git> <path to experiment git>/<subfolder of experiment>/visualisation.textproto
+bmatching_cli --graph input.hgr --algorithms greedy --output_format json --output result.json
 ```
-The plots are stored in `<path to experiment git>/vis/<folder_name>`.
+
+### Binary to file
+
+```sh
+bmatching_cli --graph input.hgr --algorithms greedy --output_format binary --output result.pb
+```
+
+---
 
 ## Logging
 
-By default `HeiHGM::BMatching` does not log, you can enable it by adding `--define logging=enabled`.
+Logging is disabled by default. To enable: set `BMATCHING_ENABLE_LOGGING=ON` at cmake configure time.
 
-If build with logging enabled, you can define a verbosity level by supplying to HeiHGM::BMatching `--undefok=v --v=<level>`
+When enabled, control verbosity at runtime:
 
-Verbosity levels:
+```sh
+bmatching_cli --graph input.hgr --algorithms greedy --undefok=v --v=8
+```
 
 | Level | Functions |
-| ----- | ----- |
-| 8     | addToMatching, removeFromMatching |
+|-------|-----------|
+| 8 | `addToMatching`, `removeFromMatching` |
 
-## Usage with `spack`
+---
 
+## Usage with Spack
 
-`spack` is a tool to manage software on compute clusters.
-We use it to manage system dependencies. Otherwise, you should take care of linking yourself.
+[Spack](https://spack.io) manages system dependencies on compute clusters:
+
 ```sh
-#install spack 
 git clone --depth=100 --branch=releases/v0.20 https://github.com/spack/spack.git
-cd spack
-. share/spack/setup-env.sh
-# change to bmatching
-cd bmatching
+cd spack && . share/spack/setup-env.sh
+
+cd /path/to/Bmatching
 spack env activate .
 spack install
 spack load
-# build as used to be with spack=enabled
+```
+
+Then build as usual.
+
+---
+
+## Citation
+
+If you use this software in your research, please cite:
+
+> Ernestine Großmann, Felix Joos, Henrik Reinstädtler, and Christian Schulz.
+> **Engineering Hypergraph *b*-Matching Algorithms.**
+> *Journal of Graph Algorithms and Applications (JGAA)*, 30(1):1--24, 2026.
+> DOI: [10.7155/jgaa.v30i1.3166](https://doi.org/10.7155/jgaa.v30i1.3166)
+
+```bibtex
+@article{GrossmannJRS26,
+  author    = {Gro{\ss}mann, Ernestine and Joos, Felix and Reinst{\"a}dtler, Henrik and Schulz, Christian},
+  title     = {Engineering Hypergraph $b$-Matching Algorithms},
+  journal   = {Journal of Graph Algorithms and Applications},
+  volume    = {30},
+  number    = {1},
+  pages     = {1--24},
+  year      = {2026},
+  doi       = {10.7155/jgaa.v30i1.3166}
+}
 ```
