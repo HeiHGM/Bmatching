@@ -296,16 +296,6 @@ bmatching_cli --graph input.hgr --algorithms greedy --undefok=v --v=8
 
 ---
 
-## Adding a New Algorithm
-
-1. Implement your (templated) algorithm in a `bmatching/` subfolder.
-2. Write an `AlgorithmImpl` in `app/algorithms/` — implement `Execute` and `ValidateConfig`.
-3. Give your implementation a unique `AlgorithmName`.
-4. Register it via the `REGISTER_IMPL` macro.
-5. Use your algorithm by name in `--algorithms`.
-
----
-
 ## Usage with Spack
 
 [Spack](https://spack.io) manages system dependencies on compute clusters:
