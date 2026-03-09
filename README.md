@@ -12,6 +12,7 @@
 [![GitHub Issues](https://img.shields.io/github/issues/HeiHGM/Bmatching)](https://github.com/HeiHGM/Bmatching/issues)
 [![GitHub Last Commit](https://img.shields.io/github/last-commit/HeiHGM/Bmatching)](https://github.com/HeiHGM/Bmatching/commits)
 [![DOI](https://img.shields.io/badge/DOI-10.7155%2Fjgaa.v30i1.3166-green.svg)](https://doi.org/10.7155/jgaa.v30i1.3166)
+[![arXiv](https://img.shields.io/badge/arXiv-2408.06924-b31b1b)](https://arxiv.org/abs/2408.06924)
 [![Zenodo](https://img.shields.io/badge/Zenodo-data-blue)](https://doi.org/10.5281/zenodo.18225669)
 [![Agent-Ready](https://img.shields.io/badge/agent--ready-yes-brightgreen)](https://github.com/HeiHGM/Bmatching)
 [![Heidelberg University](https://img.shields.io/badge/Heidelberg-University-red)](https://www.uni-heidelberg.de)
