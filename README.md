@@ -2,9 +2,19 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![CI](https://github.com/HeiHGM/Bmatching/actions/workflows/ci.yml/badge.svg)](https://github.com/HeiHGM/Bmatching/actions/workflows/ci.yml)
+[![GitHub Release](https://img.shields.io/github/v/release/HeiHGM/Bmatching)](https://github.com/HeiHGM/Bmatching/releases/latest)
 [![C++17](https://img.shields.io/badge/C%2B%2B-17-orange.svg)](https://en.cppreference.com/w/cpp/17)
 [![CMake](https://img.shields.io/badge/CMake-%3E%3D%203.20-blue.svg)](https://cmake.org/)
+[![Linux](https://img.shields.io/badge/platform-Linux-blue)](https://github.com/HeiHGM/Bmatching)
+[![macOS](https://img.shields.io/badge/platform-macOS-blue)](https://github.com/HeiHGM/Bmatching)
+[![Homebrew](https://img.shields.io/badge/homebrew-available-orange)](https://github.com/HeiHGM/homebrew-bmatching)
+[![GitHub Stars](https://img.shields.io/github/stars/HeiHGM/Bmatching)](https://github.com/HeiHGM/Bmatching/stargazers)
+[![GitHub Issues](https://img.shields.io/github/issues/HeiHGM/Bmatching)](https://github.com/HeiHGM/Bmatching/issues)
+[![GitHub Last Commit](https://img.shields.io/github/last-commit/HeiHGM/Bmatching)](https://github.com/HeiHGM/Bmatching/commits)
 [![DOI](https://img.shields.io/badge/DOI-10.7155%2Fjgaa.v30i1.3166-green.svg)](https://doi.org/10.7155/jgaa.v30i1.3166)
+[![Zenodo](https://img.shields.io/badge/Zenodo-data-blue)](https://doi.org/10.5281/zenodo.18225669)
+[![Agent-Ready](https://img.shields.io/badge/agent--ready-yes-brightgreen)](https://github.com/HeiHGM/Bmatching)
+[![Heidelberg University](https://img.shields.io/badge/Heidelberg-University-red)](https://www.uni-heidelberg.de)
 
 **Fast, flexible and scalable b-matching in hypergraphs.**
 
