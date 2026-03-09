@@ -1,13 +1,13 @@
 # HeiHGM::BMatching
 
-A solver for b-matching problems in hypergraphs using reductions, integer linear programs, and local search techniques.
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![C++17](https://img.shields.io/badge/C%2B%2B-17-orange.svg)](https://en.cppreference.com/w/cpp/17)
+[![CMake](https://img.shields.io/badge/CMake-%3E%3D%203.20-blue.svg)](https://cmake.org/)
+[![DOI](https://img.shields.io/badge/DOI-10.7155%2Fjgaa.v30i1.3166-green.svg)](https://doi.org/10.7155/jgaa.v30i1.3166)
 
-This is the software for the paper:
+**Tame your hypergraphs -- fast, modular b-matching at any scale.**
 
-> **Engineering Hypergraph b-Matching Algorithms**
-> by Ernestine Großmann, Felix Joos, Henrik Reinstädtler and Christian Schulz
-
-Source code: https://github.com/HeiHGM/Bmatching
+A high-performance solver for b-matching problems in hypergraphs, combining graph reductions, integer linear programming, and local search into a flexible algorithm pipeline.
 
 ---
 
@@ -311,3 +311,27 @@ spack load
 ```
 
 Then build as usual.
+
+---
+
+## Citation
+
+If you use this software in your research, please cite:
+
+> Ernestine Großmann, Felix Joos, Henrik Reinstädtler, and Christian Schulz.
+> **Engineering Hypergraph *b*-Matching Algorithms.**
+> *Journal of Graph Algorithms and Applications (JGAA)*, 30(1):1--24, 2026.
+> DOI: [10.7155/jgaa.v30i1.3166](https://doi.org/10.7155/jgaa.v30i1.3166)
+
+```bibtex
+@article{GrossmannJRS26,
+  author    = {Gro{\ss}mann, Ernestine and Joos, Felix and Reinst{\"a}dtler, Henrik and Schulz, Christian},
+  title     = {Engineering Hypergraph $b$-Matching Algorithms},
+  journal   = {Journal of Graph Algorithms and Applications},
+  volume    = {30},
+  number    = {1},
+  pages     = {1--24},
+  year      = {2026},
+  doi       = {10.7155/jgaa.v30i1.3166}
+}
+```
