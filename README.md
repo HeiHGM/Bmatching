@@ -278,43 +278,6 @@ bmatching_cli --graph input.hgr --algorithms greedy --output_format binary --out
 
 ---
 
-## Running Experiments
-
-For batch experiments across many hypergraphs, use the `runner` infrastructure.
-
-### 1. Get Experiment Data
-
-Download hypergraph collections from [Zenodo](https://doi.org/10.5281/zenodo.18225669). Expected layout:
-
-```
-graphs/
-  walshaw/
-    collection.textproto
-    graph1.graph.hgr
-    graph1.graph.mtx
-storage.textproto
-```
-
-### 2. Generate, Run, and Analyze
-
-```sh
-# Generate experiment config
-mkdir my_experiment
-./build/runner/generate_experiment_config \
-  --data_path path/to/hypergraph-data \
-  --experiment_name "my_experiment" \
-  --experiment_path "my_experiment" \
-  --concurrent_processes 16
-
-# Run the experiment
-./build/runner/runner --experiment_path my_experiment
-
-# Plot results
-python3 tools/plot/plot.py <path_to_experiment> <path_to_experiment>/visualisation.textproto
-```
-
----
-
 ## Logging
 
 Logging is enabled by default (`BMATCHING_ENABLE_LOGGING=ON`).
