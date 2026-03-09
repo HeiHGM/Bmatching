@@ -32,7 +32,16 @@ cd Bmatching
 
 ---
 
-## Building
+## Install via Homebrew
+
+```sh
+brew install HeiHGM/bmatching/bmatching
+bmatching --graph examples/weighted.hgr --algorithms greedy --capacity 2 --quiet
+```
+
+---
+
+## Building from Source
 
 **Prerequisites:** CMake >= 3.20, a C++17 compiler, and ncurses dev headers.
 
