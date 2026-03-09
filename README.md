@@ -6,13 +6,13 @@
 [![CMake](https://img.shields.io/badge/CMake-%3E%3D%203.20-blue.svg)](https://cmake.org/)
 [![DOI](https://img.shields.io/badge/DOI-10.7155%2Fjgaa.v30i1.3166-green.svg)](https://doi.org/10.7155/jgaa.v30i1.3166)
 
+**Fast, flexible and scalable b-matching in hypergraphs.**
+
 <p align="center">
   <img src="https://raw.githubusercontent.com/HeiHGM/logo/master/heihgm-logo.png" alt="HeiHGM Logo" width="256"/>
 </p>
 
-**Fast, flexible b-matching at any scale.**
-
-A high-performance solver for b-matching problems in hypergraphs, combining graph reductions, integer linear programming, and local search into a flexible algorithm pipeline.
+A solver for b-matching problems in hypergraphs, combining graph reductions, integer linear programming, and local search into a flexible algorithm pipeline.
 
 Experiment data is available on [Zenodo](https://doi.org/10.5281/zenodo.18225669). For reproducing paper results, see [reproducibility/reproducibility.md](reproducibility/reproducibility.md).
 
