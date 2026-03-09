@@ -32,6 +32,7 @@ target_link_libraries(bmatching_cli PRIVATE
   absl::flags_parse
   absl::flags_usage
   absl::statusor
+  absl::strings
   easyloggingpp_lib
 )
 

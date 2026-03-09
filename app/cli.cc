@@ -13,13 +13,14 @@
 #include <google/protobuf/text_format.h>
 #include <google/protobuf/util/json_util.h>
 #include <iostream>
-#include <sstream>
 #include <string>
 #include <vector>
 
 #include "absl/flags/flag.h"
 #include "absl/flags/parse.h"
 #include "absl/flags/usage.h"
+#include "absl/strings/str_split.h"
+#include "absl/strings/strip.h"
 #include "app/algorithms/algorithm_impl.h"
 #include "app/app_io.pb.h"
 #include "ds/bmatching.h"
@@ -48,7 +49,7 @@ ABSL_FLAG(double, timeout, 60.0, "Solver timeout in seconds.");
 
 // --- ILS params ---
 ABSL_FLAG(int64_t, max_tries, 1000, "Max iterations for ILS / local search.");
-ABSL_FLAG(bool, inplace, false, "Run ILS in-place (modify matching directly).");
+ABSL_FLAG(bool, inplace, false, "Use newer ILS interface internally.");
 
 // --- Local improvement params ---
 ABSL_FLAG(int64_t, iters, 10, "Number of local improvement iterations.");
@@ -87,58 +88,45 @@ using HeiHGM::BMatching::app::app_io::Hypergraph;
 using HeiHGM::BMatching::app::app_io::Result;
 using HeiHGM::BMatching::app::app_io::RunConfig;
 
-std::vector<std::string> split(const std::string &s, char delim) {
-  std::vector<std::string> tokens;
-  std::istringstream stream(s);
-  std::string token;
-  while (std::getline(stream, token, delim)) {
-    // Trim whitespace
-    size_t start = token.find_first_not_of(" \t");
-    size_t end = token.find_last_not_of(" \t");
-    if (start != std::string::npos) {
-      tokens.push_back(token.substr(start, end - start + 1));
-    }
-  }
-  return tokens;
-}
-
 AlgorithmConfig buildConfig(const std::string &algo_name) {
   AlgorithmConfig config;
   config.set_algorithm_name(algo_name);
 
   if (algo_name == "greedy") {
-    (*config.mutable_string_params())["ordering_method"] =
-        absl::GetFlag(FLAGS_ordering_method);
+    config.mutable_string_params()->insert(
+        {"ordering_method", absl::GetFlag(FLAGS_ordering_method)});
   } else if (algo_name == "ils") {
-    (*config.mutable_int64_params())["max_tries"] =
-        absl::GetFlag(FLAGS_max_tries);
+    config.mutable_int64_params()->insert(
+        {"max_tries", absl::GetFlag(FLAGS_max_tries)});
     if (absl::GetFlag(FLAGS_inplace)) {
-      (*config.mutable_string_params())["inplace"] = "true";
+      config.mutable_string_params()->insert({"inplace", "true"});
     }
   } else if (algo_name == "local_improvement") {
-    (*config.mutable_string_params())["backend"] =
-        absl::GetFlag(FLAGS_backend);
-    (*config.mutable_int64_params())["iters"] = absl::GetFlag(FLAGS_iters);
-    (*config.mutable_int64_params())["distance"] =
-        absl::GetFlag(FLAGS_distance);
-    (*config.mutable_double_params())["timeout"] =
-        absl::GetFlag(FLAGS_timeout);
-    (*config.mutable_int64_params())["max_tries"] =
-        absl::GetFlag(FLAGS_max_tries);
+    config.mutable_string_params()->insert(
+        {"backend", absl::GetFlag(FLAGS_backend)});
+    config.mutable_int64_params()->insert(
+        {"iters", absl::GetFlag(FLAGS_iters)});
+    config.mutable_int64_params()->insert(
+        {"distance", absl::GetFlag(FLAGS_distance)});
+    config.mutable_double_params()->insert(
+        {"timeout", absl::GetFlag(FLAGS_timeout)});
+    config.mutable_int64_params()->insert(
+        {"max_tries", absl::GetFlag(FLAGS_max_tries)});
   } else if (algo_name == "ilp_exact" || algo_name == "presolved_ilp" ||
              algo_name == "scip") {
-    (*config.mutable_double_params())["timeout"] =
-        absl::GetFlag(FLAGS_timeout);
+    config.mutable_double_params()->insert(
+        {"timeout", absl::GetFlag(FLAGS_timeout)});
   } else if (algo_name == "reductions") {
-    (*config.mutable_string_params())["assume_sorted"] = "true";
+    config.mutable_string_params()->insert({"assume_sorted", "true"});
     if (absl::GetFlag(FLAGS_disable_hint)) {
-      (*config.mutable_string_params())["disable_hint"] = "true";
+      config.mutable_string_params()->insert({"disable_hint", "true"});
     }
-    (*config.mutable_int64_params())["max_runs"] =
-        absl::GetFlag(FLAGS_max_runs);
-    (*config.mutable_int64_params())["reps"] = absl::GetFlag(FLAGS_reps);
+    config.mutable_int64_params()->insert(
+        {"max_runs", absl::GetFlag(FLAGS_max_runs)});
+    config.mutable_int64_params()->insert(
+        {"reps", absl::GetFlag(FLAGS_reps)});
   } else if (algo_name == "unfold") {
-    (*config.mutable_string_params())["assume_sorted"] = "true";
+    config.mutable_string_params()->insert({"assume_sorted", "true"});
   }
 
   return config;
@@ -208,7 +196,8 @@ int main(int argc, char **argv) {
   run_config.set_capacity(absl::GetFlag(FLAGS_capacity));
   run_config.set_short_name("cli");
 
-  auto algo_names = split(absl::GetFlag(FLAGS_algorithms), ',');
+  std::vector<std::string> algo_names =
+      absl::StrSplit(absl::GetFlag(FLAGS_algorithms), ',', absl::SkipWhitespace());
   if (algo_names.empty()) {
     std::cerr << "Error: no algorithms specified.\n";
     return 1;

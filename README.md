@@ -6,9 +6,11 @@
 [![CMake](https://img.shields.io/badge/CMake-%3E%3D%203.20-blue.svg)](https://cmake.org/)
 [![DOI](https://img.shields.io/badge/DOI-10.7155%2Fjgaa.v30i1.3166-green.svg)](https://doi.org/10.7155/jgaa.v30i1.3166)
 
-**Tame your hypergraphs -- fast, modular b-matching at any scale.**
+**Tame your hypergraphs -- fast, flexible b-matching at any scale.**
 
 A high-performance solver for b-matching problems in hypergraphs, combining graph reductions, integer linear programming, and local search into a flexible algorithm pipeline.
+
+Experiment data is available on [Zenodo](https://doi.org/10.5281/zenodo.18225669). For reproducing paper results, see [reproducibility/reproducibility.md](reproducibility/reproducibility.md).
 
 ---
 
@@ -69,7 +71,7 @@ All external dependencies (Abseil, Protobuf, GoogleTest, Easylogging++, wide-int
 | `BMATCHING_USE_KARP_SIPSER` | OFF | Enable Karp-Sipser algorithm (fetched via git) |
 | `BMATCHING_USE_HASHING` | OFF | Enable edge hashing for Weighted Domination reduction |
 | `BMATCHING_USE_TCMALLOC` | OFF | Use tcmalloc from gperftools |
-| `BMATCHING_ENABLE_LOGGING` | ON | Enable easylogging++ log output |
+| `BMATCHING_ENABLE_LOGGING` | OFF | Enable easylogging++ log output |
 | `BMATCHING_FREE_MEMORY_CHECK` | OFF | Enable free memory checking in runner |
 | `BUILD_TESTING` | ON | Build unit tests |
 
@@ -121,7 +123,7 @@ bmatching_cli --graph <file> --algorithms <algo1,algo2,...> [options]
 | `--disable_hint` | false | Don't mark reductions solution as exact |
 | `--max_runs <int>` | 10 | Maximum reduction rounds |
 | `--reps <int>` | 1 | Number of reduction repetitions |
-| `--inplace` | false | Run ILS in-place |
+| `--inplace` | false | Use newer ILS interface internally |
 
 ### Output Flags
 
@@ -167,9 +169,6 @@ bmatching_cli --graph input.hgr --algorithms greedy --capacity 5
 Reduces the graph size using b-matching reductions. Always pair with `unfold` afterwards to recover the full solution.
 
 ```sh
-# Reductions only (exact on solvable instances)
-bmatching_cli --graph input.hgr --algorithms reductions,unfold --capacity 1
-
 # Reductions + greedy on the remainder
 bmatching_cli --graph input.hgr --algorithms reductions,greedy,unfold --capacity 5
 
@@ -290,9 +289,7 @@ bmatching_cli --graph input.hgr --algorithms greedy --output_format binary --out
 
 ## Logging
 
-Logging is enabled by default (`BMATCHING_ENABLE_LOGGING=ON`).
-
-To disable: set `BMATCHING_ENABLE_LOGGING=OFF` at cmake configure time.
+Logging is disabled by default. To enable: set `BMATCHING_ENABLE_LOGGING=ON` at cmake configure time.
 
 When enabled, control verbosity at runtime:
 

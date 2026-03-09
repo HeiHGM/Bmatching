@@ -14,7 +14,7 @@ option(BMATCHING_USE_BSUITOR      "Enable bSuitor algorithm"                OFF)
 option(BMATCHING_USE_KARP_SIPSER  "Enable Karp-Sipser algorithm"            OFF)
 option(BMATCHING_USE_HASHING      "Enable hashing support (wide-integer)"   OFF)
 option(BMATCHING_USE_TCMALLOC     "Use tcmalloc from gperftools"            OFF)
-option(BMATCHING_ENABLE_LOGGING   "Enable easylogging++ logging output"     ON)
+option(BMATCHING_ENABLE_LOGGING   "Enable easylogging++ logging output"     OFF)
 option(BMATCHING_FREE_MEMORY_CHECK "Enable free memory checking in runner"  OFF)
 option(BUILD_TESTING              "Build tests"                             ON)
 

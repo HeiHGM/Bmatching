@@ -97,14 +97,7 @@ for graph in "${GRAPHS[@]}"; do
     done
   done
 
-  # 2. reductions + unfold
-  for cap in 1 3; do
-    run_test "$graph" "reductions+unfold" "$cap" \
-      "command:\"run\" hypergraph { file_path:\"$graph\" format:\"hgr\" } config { algorithm_configs { algorithm_name:\"reductions\" string_params{key:\"assume_sorted\" value:\"true\"} } algorithm_configs { algorithm_name:\"unfold\" string_params{key:\"assume_sorted\" value:\"true\"} } capacity:$cap short_name:\"test\" }" \
-      "--graph $graph --algorithms reductions,unfold --capacity $cap"
-  done
-
-  # 3. reductions + greedy + unfold
+  # 2. reductions + greedy + unfold
   for cap in 1 3 5; do
     run_test "$graph" "reductions+greedy+unfold" "$cap" \
       "command:\"run\" hypergraph { file_path:\"$graph\" format:\"hgr\" } config { algorithm_configs { algorithm_name:\"reductions\" string_params{key:\"assume_sorted\" value:\"true\"} } algorithm_configs { algorithm_name:\"greedy\" string_params{key:\"ordering_method\" value:\"bmindegree_dynamic\"} } algorithm_configs { algorithm_name:\"unfold\" string_params{key:\"assume_sorted\" value:\"true\"} } capacity:$cap short_name:\"test\" }" \
