@@ -1,6 +1,7 @@
 # HeiHGM::BMatching
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![CI](https://github.com/HeiHGM/Bmatching/actions/workflows/ci.yml/badge.svg)](https://github.com/HeiHGM/Bmatching/actions/workflows/ci.yml)
 [![C++17](https://img.shields.io/badge/C%2B%2B-17-orange.svg)](https://en.cppreference.com/w/cpp/17)
 [![CMake](https://img.shields.io/badge/CMake-%3E%3D%203.20-blue.svg)](https://cmake.org/)
 [![DOI](https://img.shields.io/badge/DOI-10.7155%2Fjgaa.v30i1.3166-green.svg)](https://doi.org/10.7155/jgaa.v30i1.3166)
@@ -19,14 +20,14 @@ git clone https://github.com/HeiHGM/Bmatching.git
 cd Bmatching
 ./compile.sh
 
-# Greedy matching
-./build/app/bmatching_cli --graph path/to/graph.hgr --algorithms greedy --capacity 1
+# Try it right away on bundled examples
+./build/app/bmatching_cli --graph examples/small.hgr --algorithms greedy --capacity 1
 
-# Reductions + greedy + unfold
-./build/app/bmatching_cli --graph path/to/graph.hgr --algorithms reductions,greedy,unfold --capacity 5
+# Weighted hypergraph with reductions
+./build/app/bmatching_cli --graph examples/weighted.hgr --algorithms reductions,greedy,unfold --capacity 2
 
 # Compact output (weight, size, time only)
-./build/app/bmatching_cli --graph path/to/graph.hgr --algorithms reductions,greedy,unfold --quiet
+./build/app/bmatching_cli --graph examples/weighted.hgr --algorithms reductions,greedy,unfold --quiet
 ```
 
 ---

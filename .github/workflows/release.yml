@@ -1,0 +1,37 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y cmake g++ libncurses-dev
+
+      - name: Build
+        run: |
+          cmake -B build -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF -DBMATCHING_ENABLE_LOGGING=OFF
+          cmake --build build -j$(nproc) --target bmatching_cli
+
+      - name: Package
+        run: |
+          mkdir -p bmatching-${{ github.ref_name }}-linux-x86_64
+          cp build/app/bmatching_cli bmatching-${{ github.ref_name }}-linux-x86_64/
+          cp LICENSE README.md bmatching-${{ github.ref_name }}-linux-x86_64/
+          cp -r examples bmatching-${{ github.ref_name }}-linux-x86_64/
+          tar czf bmatching-${{ github.ref_name }}-linux-x86_64.tar.gz bmatching-${{ github.ref_name }}-linux-x86_64/
+
+      - name: Create release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: bmatching-*.tar.gz
+          generate_release_notes: true
