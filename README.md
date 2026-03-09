@@ -35,7 +35,7 @@ cd Bmatching
 ## Install via Homebrew
 
 ```sh
-brew install HeiHGM/bmatching/bmatching
+brew install --HEAD HeiHGM/bmatching/bmatching
 bmatching --graph examples/weighted.hgr --algorithms greedy --capacity 2 --quiet
 ```
 
