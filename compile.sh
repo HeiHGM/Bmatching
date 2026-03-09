@@ -9,4 +9,4 @@ cmake -B "$BUILD_DIR" \
   -DBUILD_TESTING=OFF
 
 cmake --build "$BUILD_DIR" -j"$(nproc)" \
-  --target app runner fork_runner generate_experiment_config binary_to_textproto
+  --target app bmatching_cli runner fork_runner generate_experiment_config binary_to_textproto

@@ -34,7 +34,9 @@ if(BMATCHING_USE_BSUITOR)
   list(APPEND ALGORITHM_IMPL_HDRS bsuitor.h)
 endif()
 
-add_library(algorithm_impl_lib ${ALGORITHM_IMPL_SRCS} ${ALGORITHM_IMPL_HDRS})
+# OBJECT library ensures all registration statics (REGISTER_IMPL) are linked,
+# equivalent to Bazel's alwayslink=1.
+add_library(algorithm_impl_lib OBJECT ${ALGORITHM_IMPL_SRCS} ${ALGORITHM_IMPL_HDRS})
 target_link_libraries(algorithm_impl_lib PUBLIC
   app_io_cc_proto
   greedy
