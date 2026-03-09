@@ -73,16 +73,13 @@ cmake -B build \
 cmake --build build -j$(nproc)
 ```
 
-### Built Binaries
+### Built Binary
 
-| Binary | Path | Description |
-|--------|------|-------------|
-| `bmatching_cli` | `build/app/bmatching_cli` | **User-friendly CLI** for all algorithms |
-| `app` | `build/app/app` | One-off computations (textproto interface) |
-| `runner` | `build/runner/runner` | Parallel experiment runner |
-| `fork_runner` | `build/runner/fork_runner` | Fork-based experiment runner |
-| `generate_experiment_config` | `build/runner/generate_experiment_config` | Experiment config generator |
-| `binary_to_textproto` | `build/tools/binary_to_textproto` | Convert binary proto to text |
+After building, the CLI is available at:
+
+```
+build/app/bmatching_cli
+```
 
 ---
 
