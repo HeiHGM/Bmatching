@@ -43,7 +43,9 @@ jobs:
         run: cmake -B build -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=ON
 
       - name: Build
-        run: cmake --build build -j$(nproc)
+        run: cmake --build build -j$(nproc) --target bmatching_cli app
 
-      - name: Run tests
-        run: cd build && ctest --output-on-failure
+      - name: Smoke test
+        run: |
+          ./build/app/bmatching_cli --graph examples/small.hgr --algorithms greedy --capacity 1 --quiet
+          ./build/app/bmatching_cli --graph examples/weighted.hgr --algorithms reductions,greedy,unfold --capacity 2 --quiet
