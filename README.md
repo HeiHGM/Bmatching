@@ -14,33 +14,24 @@ Source code: https://github.com/HeiHGM/Bmatching
 ## Quick Start
 
 ```sh
-# Clone
+# Clone & build
 git clone https://github.com/HeiHGM/Bmatching.git
 cd Bmatching
-
-# Build (CMake)
 ./compile.sh
 
-# Run a single computation
-./build/app/app --command_textproto '
-  command: "run"
-  hypergraph { file_path: "path/to/graph.hgr" format: "hgr" }
-  config {
-    algorithm_configs { algorithm_name: "greedy"
-      string_params { key: "ordering_method" value: "bmindegree_dynamic" }
-    }
-    capacity: 1
-    short_name: "greedy_test"
-  }'
+# Greedy matching
+./build/app/bmatching_cli --graph path/to/graph.hgr --algorithms greedy --capacity 1
+
+# Reductions + greedy + unfold
+./build/app/bmatching_cli --graph path/to/graph.hgr --algorithms reductions,greedy,unfold --capacity 5
+
+# Compact output (weight, size, time only)
+./build/app/bmatching_cli --graph path/to/graph.hgr --algorithms reductions,greedy,unfold --quiet
 ```
 
 ---
 
 ## Building
-
-HeiHGM::BMatching supports two build systems: **CMake** (recommended) and **Bazel**.
-
-### CMake (recommended)
 
 **Prerequisites:** CMake >= 3.20, a C++17 compiler, and ncurses dev headers.
 
@@ -58,7 +49,7 @@ cmake --build build -j$(nproc)
 
 All external dependencies (Abseil, Protobuf, GoogleTest, Easylogging++, wide-integer) are fetched automatically via CMake's FetchContent.
 
-#### CMake Options
+### Options
 
 | Option | Default | Description |
 |--------|---------|-------------|
@@ -82,43 +73,22 @@ cmake -B build \
 cmake --build build -j$(nproc)
 ```
 
-#### Built Binaries (CMake)
+### Built Binaries
 
 | Binary | Path | Description |
 |--------|------|-------------|
-| `app` | `build/app/app` | One-off computations |
+| `bmatching_cli` | `build/app/bmatching_cli` | **User-friendly CLI** for all algorithms |
+| `app` | `build/app/app` | One-off computations (textproto interface) |
 | `runner` | `build/runner/runner` | Parallel experiment runner |
 | `fork_runner` | `build/runner/fork_runner` | Fork-based experiment runner |
 | `generate_experiment_config` | `build/runner/generate_experiment_config` | Experiment config generator |
 | `binary_to_textproto` | `build/tools/binary_to_textproto` | Convert binary proto to text |
 
-### Bazel
-
-**Prerequisites:** [Bazel](https://bazel.build), clang compiler suite.
-
-```sh
-bazel build -c opt //app
-bazel build -c opt //runner
-```
-
-Bazel feature flags are passed via `--define`:
-
-```sh
-bazel build -c opt --define gurobi=enabled //app
-bazel build -c opt --define hashing=enabled --define tcmalloc=gperftools //runner
-bazel build -c opt --define bsuitor=enabled --define karp_sipser=enabled //runner
-```
-
-#### Platform Notes (Bazel)
-
-- **macOS**: uncomment `--cxxopt=-stdlib=libc++` in `.bazelrc` if Gurobi was compiled with a different stdlib. Comment out `--cxxopt=-frecord-gcc-switches`.
-- **macOS + OpenMP**: install `open-mpi` and `llvm` via brew, then prefix commands with `BAZEL_USE_CPP_ONLY_TOOLCHAIN=1 CC=/opt/homebrew/opt/llvm/bin/clang`.
-
 ---
 
 ## Algorithms
 
-Algorithms are configured via textproto using `algorithm_configs` entries. Parameters are passed through `string_params`, `int64_params`, and `double_params`. See [app/app_io.proto](app/app_io.proto) for the full definition.
+Algorithms are selected via `--algorithms` in the CLI (comma-separated pipeline). See [app/app_io.proto](app/app_io.proto) for the full proto definition.
 
 ### `greedy`
 
@@ -137,15 +107,16 @@ Greedily adds edges to a b-matching. Set the `ordering_method` string parameter:
 
 ### `ilp_exact`
 
-Exactly solves a b-matching using Gurobi. Requires `BMATCHING_USE_GUROBI=ON` (CMake) or `--define gurobi=enabled` (Bazel).
+Exactly solves a b-matching using Gurobi. Requires `BMATCHING_USE_GUROBI=ON`.
 
 - `timeout` (double_params): solver time limit in seconds
 
 ### `ils`
 
-Iterated local search: searches for edge-pair swaps to improve an a priori solution, then perturbs to escape local optima.
+Iterated local search: searches for edge-pair swaps to improve an a priori solution, then perturbs to escape local optima. Requires an a priori solution (run greedy first).
 
-- `timeout` (double_params): time limit in seconds
+- `max_tries` (int64_params / `--max_tries`): maximum number of search iterations
+- `inplace` (string_params / `--inplace`): modify matching in-place
 
 ### `local_improvement`
 
@@ -179,18 +150,96 @@ Solves the reduced graph exactly using ILP via SCIP.
 
 For comparison, the `runner` can link external solvers. These are fetched automatically when enabled.
 
-| Algorithm | Enable Flag (CMake) | Enable Flag (Bazel) | Authors |
-|-----------|-------------------|-------------------|---------|
-| **bSuitor** | `BMATCHING_USE_BSUITOR=ON` | `--define bsuitor=enabled` | Khan et al. |
-| **kss** / **ksmd** | `BMATCHING_USE_KARP_SIPSER=ON` | `--define karp_sipser=enabled` | Dufosse et al. |
+| Algorithm | Enable Flag | Authors |
+|-----------|-------------|---------|
+| **bSuitor** | `BMATCHING_USE_BSUITOR=ON` | Khan et al. |
+| **kss** / **ksmd** | `BMATCHING_USE_KARP_SIPSER=ON` | Dufosse et al. |
 
 Note: `kss`/`ksmd` only supports capacity 1. For `kss`, set `scaling_iterations` in `int64_params`.
 
 ---
 
-## Running One-Off Computations
+## Command-Line Interface (`bmatching_cli`)
 
-Use the `app` binary with a textproto config:
+`bmatching_cli` provides a flag-based interface for running all algorithms without writing textproto configs.
+
+### Basic Usage
+
+```sh
+bmatching_cli --graph <file> --algorithms <algo1,algo2,...> [options]
+```
+
+### Required Flags
+
+| Flag | Description |
+|------|-------------|
+| `--graph <path>` | Path to the hypergraph file |
+| `--algorithms <list>` | Comma-separated algorithm pipeline (e.g. `reductions,greedy,unfold`) |
+
+### Common Flags
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--capacity <int>` | 1 | Node capacity (`-1` = use node weights from file) |
+| `--format <str>` | `hgr` | Input format: `hgr` or `graph` |
+| `--ordering_method <str>` | `bmindegree_dynamic` | Greedy ordering method (see [Algorithms](#algorithms)) |
+| `--timeout <float>` | 60.0 | Solver timeout in seconds (ilp_exact, presolved_ilp, scip, local_improvement) |
+| `--max_tries <int>` | 1000 | Max iterations for ILS / local search |
+| `--iters <int>` | 10 | Local improvement iterations |
+| `--distance <int>` | 5 | Edges per local improvement neighborhood |
+| `--backend <str>` | `gurobi` | Solver backend for local_improvement: `gurobi` or `scip` |
+| `--disable_hint` | false | Don't mark reductions solution as exact |
+| `--max_runs <int>` | 10 | Maximum reduction rounds |
+| `--reps <int>` | 1 | Number of reduction repetitions |
+| `--inplace` | false | Run ILS in-place |
+
+### Output Flags
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--quiet` | false | Only print weight, size, exactness, and time |
+| `--output <path>` | stdout | Write result to file |
+| `--output_format <str>` | `text` | Output format: `text` (textproto), `json`, or `binary` |
+
+### Examples
+
+```sh
+# Greedy with specific ordering
+bmatching_cli --graph input.hgr --algorithms greedy --ordering_method bweight --capacity 3
+
+# Full pipeline: reductions + greedy + unfold
+bmatching_cli --graph input.hgr --algorithms reductions,greedy,unfold --capacity 5
+
+# Reductions + ILS refinement + unfold
+bmatching_cli --graph input.hgr --algorithms reductions,greedy,ils,unfold \
+  --max_tries 5000 --capacity 1
+
+# Exact solve with reductions (requires Gurobi)
+bmatching_cli --graph input.hgr --algorithms reductions,presolved_ilp,unfold \
+  --timeout 300 --capacity 1
+
+# SCIP exact solve
+bmatching_cli --graph input.hgr --algorithms reductions,scip,unfold \
+  --timeout 120 --capacity 3
+
+# Local improvement with SCIP backend
+bmatching_cli --graph input.hgr --algorithms reductions,greedy,local_improvement,unfold \
+  --backend scip --iters 20 --distance 10 --timeout 60 --capacity 1
+
+# Compact output
+bmatching_cli --graph input.hgr --algorithms reductions,greedy,unfold --quiet
+# weight: 42
+# size: 15
+# exact: false
+# time_ms: 1.234
+
+# JSON output to file
+bmatching_cli --graph input.hgr --algorithms greedy --output_format json --output result.json
+```
+
+### Legacy Textproto Interface (`app`)
+
+The original `app` binary is still available for textproto-based configs:
 
 ```sh
 ./build/app/app --command_textproto '
@@ -199,13 +248,9 @@ Use the `app` binary with a textproto config:
   config {
     algorithm_configs {
       algorithm_name: "reductions"
-      string_params { key: "disable_hint" value: "false" }
       string_params { key: "assume_sorted" value: "true" }
     }
-    algorithm_configs {
-      algorithm_name: "unfold"
-      string_params { key: "assume_sorted" value: "true" }
-    }
+    algorithm_configs { algorithm_name: "unfold" }
     capacity: 1
     short_name: "only_reductions"
   }'
@@ -298,10 +343,10 @@ visualisations {
 }
 ```
 
-Then run (Bazel only for plotting):
+Then run the plotting tool:
 
 ```sh
-bazel run tools/plot -- <path_to_experiment> <path_to_experiment>/visualisation.textproto
+python3 tools/plot/plot.py <path_to_experiment> <path_to_experiment>/visualisation.textproto
 ```
 
 Plots are saved to `<path_to_experiment>/vis/<folder_name>/`.
@@ -310,9 +355,9 @@ Plots are saved to `<path_to_experiment>/vis/<folder_name>/`.
 
 ## Logging
 
-Logging is enabled by default (CMake: `BMATCHING_ENABLE_LOGGING=ON`, Bazel: `--define logging=enabled`).
+Logging is enabled by default (`BMATCHING_ENABLE_LOGGING=ON`).
 
-To disable: set `BMATCHING_ENABLE_LOGGING=OFF` (CMake) or omit the logging define (Bazel).
+To disable: set `BMATCHING_ENABLE_LOGGING=OFF` at cmake configure time.
 
 When enabled, control verbosity at runtime:
 
@@ -352,4 +397,4 @@ spack install
 spack load
 ```
 
-Then build as usual. For Bazel, add `--define spack=enabled`.
+Then build as usual.
