@@ -6,7 +6,7 @@
 [![CMake](https://img.shields.io/badge/CMake-%3E%3D%203.20-blue.svg)](https://cmake.org/)
 [![DOI](https://img.shields.io/badge/DOI-10.7155%2Fjgaa.v30i1.3166-green.svg)](https://doi.org/10.7155/jgaa.v30i1.3166)
 
-**Tame your hypergraphs -- fast, flexible b-matching at any scale.**
+**Fast, flexible b-matching at any scale.**
 
 A high-performance solver for b-matching problems in hypergraphs, combining graph reductions, integer linear programming, and local search into a flexible algorithm pipeline.
 
